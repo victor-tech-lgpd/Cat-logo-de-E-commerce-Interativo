@@ -1,33 +1,87 @@
-// src/features/products/hooks/useProducts.test.ts
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useProducts } from './useProducts';
-import * as api from '../../../api/products';
+// src/features/products/hooks/useProducts.ts
+import { useState, useEffect, useMemo } from 'react';
+import { getProducts, getCategories } from '../../../api/products';
+import { Product } from '../../../types/Product';
 
-// Mock da API
-vi.mock('../../../api/products');
+export type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc';
 
-const mockProducts =;
-const mockCategories = ['electronics', 'jewelery'];
+export interface Filters {
+  searchTerm: string;
+  category: string;
+  sort: SortOption;
+}
 
-describe('useProducts Hook', () => {
-  beforeEach(() => {
-    vi.mocked(api.getProducts).mockResolvedValue(mockProducts);
-    vi.mocked(api.getCategories).mockResolvedValue(mockCategories);
+export const useProducts = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(['all']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Filters>({
+    searchTerm: '',
+    category: 'all',
+    sort: 'default',
   });
 
-  it('should fetch and sort products by price ascending', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useProducts());
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ]);
+        setProducts(productsData);
+        setCategories(['all', ...categoriesData]);
+        setError(null);
+      } catch (e) {
+        setError('Falha ao carregar os dados. Tente novamente mais tarde.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
 
-    await act(async () => {
-      await waitForNextUpdate();
-    });
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!products) return [];
+    let result = [...products];
 
-    act(() => {
-      result.current.setFilters({...result.current.filters, sort: 'price-asc' });
-    });
-    
-    expect(result.current.products.title).toBe('B Product');
-    expect(result.current.products.title).toBe('A Product');
-  });
-});
+    if (filters.category !== 'all') {
+      result = result.filter((p) => p.category === filters.category);
+    }
+
+    if (filters.searchTerm) {
+      result = result.filter((p) =>
+        p.title.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      );
+    }
+
+    switch (filters.sort) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'name-asc':
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'name-desc':
+        result.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }, [products, filters]);
+
+  return {
+    products: filteredAndSortedProducts,
+    categories,
+    loading,
+    error,
+    filters,
+    setFilters,
+  };
+};

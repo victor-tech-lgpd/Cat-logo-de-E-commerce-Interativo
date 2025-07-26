@@ -1,16 +1,16 @@
 // src/features/products/components/Filters.tsx
-import { Filters as FiltersType, SortOption } from '../hooks/useProducts';
+import { Filters as FiltersType } from '../hooks/useProducts';
 
 interface FiltersProps {
   filters: FiltersType;
   setFilters: React.Dispatch<React.SetStateAction<FiltersType>>;
-  categories: string;
+  categories: string[];
 }
 
 const Filters = ({ filters, setFilters, categories }: FiltersProps) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({...prev, [name]: value }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -18,7 +18,7 @@ const Filters = ({ filters, setFilters, categories }: FiltersProps) => {
       <input
         type="text"
         name="searchTerm"
-        placeholder="Search products..."
+        placeholder="Pesquisar produtos..."
         value={filters.searchTerm}
         onChange={handleInputChange}
         className="p-2 border rounded flex-grow"
@@ -30,7 +30,9 @@ const Filters = ({ filters, setFilters, categories }: FiltersProps) => {
         className="p-2 border rounded"
       >
         {categories.map((cat) => (
-          <option key={cat} value={cat} className="capitalize">{cat}</option>
+          <option key={cat} value={cat} className="capitalize">
+            {cat}
+          </option>
         ))}
       </select>
       <select
@@ -39,11 +41,11 @@ const Filters = ({ filters, setFilters, categories }: FiltersProps) => {
         onChange={handleInputChange}
         className="p-2 border rounded"
       >
-        <option value="default">Default Sort</option>
-        <option value="price-asc">Price: Low to High</option>
-        <option value="price-desc">Price: High to Low</option>
-        <option value="name-asc">Name: A to Z</option>
-        <option value="name-desc">Name: Z to A</option>
+        <option value="default">Ordenação Padrão</option>
+        <option value="price-asc">Preço: Menor para Maior</option>
+        <option value="price-desc">Preço: Maior para Menor</option>
+        <option value="name-asc">Nome: A a Z</option>
+        <option value="name-desc">Nome: Z a A</option>
       </select>
     </div>
   );

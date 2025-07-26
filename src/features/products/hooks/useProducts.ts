@@ -12,8 +12,8 @@ export interface Filters {
 }
 
 export const useProducts = () => {
-  const [products, setProducts] = useState<Product>();
-  const [categories, setCategories] = useState<string>();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(['all']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
@@ -26,38 +26,36 @@ export const useProducts = () => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const = await Promise.all([
+        const [productsData, categoriesData] = await Promise.all([
           getProducts(),
           getCategories(),
         ]);
         setProducts(productsData);
-        setCategories();
+        setCategories(['all', ...categoriesData]);
         setError(null);
       } catch (e) {
-        setError('Failed to load data. Please try again later.');
+        setError('Falha ao carregar os dados. Tente novamente mais tarde.');
       } finally {
         setLoading(false);
       }
     };
     fetchInitialData();
-  },);
+  }, []);
 
   const filteredAndSortedProducts = useMemo(() => {
+    if (!products) return [];
     let result = [...products];
 
-    // Filtragem por categoria
-    if (filters.category!== 'all') {
+    if (filters.category !== 'all') {
       result = result.filter((p) => p.category === filters.category);
     }
 
-    // Filtragem por termo de busca
     if (filters.searchTerm) {
       result = result.filter((p) =>
         p.title.toLowerCase().includes(filters.searchTerm.toLowerCase())
       );
     }
 
-    // Ordenação
     switch (filters.sort) {
       case 'price-asc':
         result.sort((a, b) => a.price - b.price);
